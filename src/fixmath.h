@@ -24,7 +24,7 @@ static inline fix_t fix_abs(fix_t x) {
     return (x < 0) ? -x : x;
 }
 
-// 13x speedup
+// 13x
 static inline fix_t fix_mul(fix_t a, fix_t b) {
     return (fix_t)(((int64_t)a * b) >> FIX_SHIFT);
 }
