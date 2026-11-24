@@ -3,7 +3,7 @@
 
 #define CHUNK_SIZE   7
 #define WORLD_W      21   // 3 chunks wide (x: 0..20; current chunk is 7..13)
-#define WORLD_H      14   // 2 chunks tall (y: 0..13; current chunk is 0..6)
+#define WORLD_H      21   // 2 chunks tall (y: 0..13; current chunk is 0..6)
 #define WORLD_STRIDE 32   // Power-of-2 row width so visuals[y][x] uses (y << 5)
 
 // Starting tile inside the bottom-center chunk (player camera sits at x + 0.5, y + 0.5)

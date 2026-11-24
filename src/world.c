@@ -84,7 +84,7 @@ static const Chunk CHUNKS[] = {
             { _, _, _, _, _, _, _ },
             { W, W, W, W, W, _, _ },
             { F, F, F, L, W, _, _ },
-            { W, W, W, L, W, _, _ },
+            { W, W, W, F, W, _, _ },
             { _, _, W, F, W, _, _ },
             { _, _, W, F, W, _, _ },
         }
@@ -97,7 +97,7 @@ static const Chunk CHUNKS[] = {
             { _, _, _, _, _, _, _ },
             { W, W, W, W, W, W, W },
             { F, F, F, T, F, F, F },
-            { W, W, W, T, W, W, W },
+            { W, W, W, F, W, W, W },
             { _, _, W, F, W, _, _ },
             { _, _, W, F, W, _, _ },
         }
