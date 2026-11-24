@@ -24,11 +24,12 @@ static inline fix_t fix_abs(fix_t x) {
     return (x < 0) ? -x : x;
 }
 
+// 13x speedup
 static inline fix_t fix_mul(fix_t a, fix_t b) {
     return (fix_t)(((int64_t)a * b) >> FIX_SHIFT);
 }
 
-// Copied from libfixmath library
+// Copied from libfixmath library, 2x speedup
 static inline fix_t fix_div(fix_t a, fix_t b) {
     if (b == 0) return (a >= 0) ? FIX_MAX : -FIX_MAX;
 
@@ -59,13 +60,14 @@ static inline fix_t fix_div(fix_t a, fix_t b) {
     return neg ? -(fix_t)quot : (fix_t)quot;
 }
 
+// 23x speedup
 static inline fix_t fix_inv_abs(fix_t x) {
     fix_t ax = fix_abs(x);
     if (ax < 128) return INT_TO_FIX(512); 
     return ((1 << 30) / ax) << 2;
 }
 
-// Trigonometry based on libfixmath library
+// Trigonometry based on libfixmath library, 16x speedup
 static inline fix_t fix_sin(int angle) {
     int a = angle & ANGLE_MASK;
     int negate = 0;

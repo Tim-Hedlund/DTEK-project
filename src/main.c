@@ -217,6 +217,14 @@ static void run_speed_benchmarks(void) {
     cyc_flt = t1 - t0;
     print_bench_row("div    ", cyc_fix, cyc_flt);
 
+    // --- Old 64-bit Divide ---
+    t0 = hardware_get_cycles();
+    for (int i = 0; i < BENCH_ITERS; i++) {
+        sink_fix = (fix_t)(((int64_t)(va_fix + i) << FIX_SHIFT) / vb_fix);
+    }
+    t1 = hardware_get_cycles();
+    print_bench_row("div64  ", t1 - t0, cyc_flt);
+
     // --- Inv Abs (|1 / x|, raycaster deltaDist) ---
     t0 = hardware_get_cycles();
     for (int i = 0; i < BENCH_ITERS; i++) {
