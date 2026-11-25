@@ -23,5 +23,6 @@ int main(void) {
 
     while (1) {
         renderer_draw_frame(hardware_get_backbuffer(), &world, &cam);
+        hardware_swap_buffers();
     }
 }
