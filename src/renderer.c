@@ -2,22 +2,15 @@
 #include "hardware.h"
 #include "assets.h"
 
-#define RGB332(r, g, b) ((uint8_t)((((r) & 7) << 5) | (((g) & 7) << 2) | ((b) & 3)))
-
 #define FOV_SCALE     43254 // ~0.66 in Q16.16 (~66 deg FOV)
 #define MAX_RAY_STEPS 20
 #define MAX_OBS       2
 #define MIN_DIST      4096  // 0.0625, avoid divide by 0
 
-#define COLOR_CEIL    RGB332(0, 0, 1)
-#define COLOR_FLOOR   RGB332(2, 1, 1)
-#define COLOR_JUMP    RGB332(7, 2, 0)
-#define COLOR_DUCK    RGB332(7, 6, 0)
-
-static void draw_background(uint8_t *fb) {
+static void draw_background(uint8_t *fb, uint8_t ceil_color, uint8_t floor_color) {
     uint32_t *fb32  = (uint32_t *)fb;
-    uint32_t ceil4  = (uint32_t)COLOR_CEIL  * 0x01010101u;
-    uint32_t floor4 = (uint32_t)COLOR_FLOOR * 0x01010101u;
+    uint32_t ceil4  = (uint32_t)ceil_color  * 0x01010101u;
+    uint32_t floor4 = (uint32_t)floor_color * 0x01010101u;
 
     int half_words = (SCREEN_W * (SCREEN_H / 2)) / 4;
     for (int i = 0; i < half_words; i++) {
@@ -28,25 +21,13 @@ static void draw_background(uint8_t *fb) {
     }
 }
 
-static inline void draw_vspan(uint8_t *fb, int x, int y0, int y1, uint8_t color) {
-    if (y0 < 0) y0 = 0;
-    if (y1 >= SCREEN_H) y1 = SCREEN_H - 1;
-    if (y0 > y1) return;
-
-    uint8_t *p = fb + y0 * SCREEN_W + x;
-    for (int y = y0; y <= y1; y++) {
-        *p = color;
-        p += SCREEN_W;
-    }
-}
-
 static inline int compute_tex_x(
     const Camera *cam,
     fix_t dist,
     fix_t rayDirX, fix_t rayDirY,
     int side
 ) {
-fix_t wallX;
+    fix_t wallX;
     if (side == 0) {
         wallX = cam->y + fix_mul(dist, rayDirY);
     } else {
@@ -67,30 +48,36 @@ static inline void draw_textured_vspan(
     int x,
     int y0,
     int y1,
-    const uint8_t *tex_col
+    const uint8_t *tex_col,
+    int tex_h,
+    int tex_mask
 ) {
     int spanH = y1 - y0;
     if (spanH <= 0) return;
 
-    int drawStart = (y0 < 0) ? 0 : y0;
-    int drawEnd   = (y1 >= SCREEN_H) ? (SCREEN_H - 1) : y1;
+    int drawStart = y0;
+    if (drawStart < 0) drawStart = 0;
+
+    int drawEnd = y1;
+    if (drawEnd >= SCREEN_H) drawEnd = SCREEN_H - 1;
     if (drawStart > drawEnd) return;
 
-    fix_t texStep = (TEX_SIZE << FIX_SHIFT) / spanH;
+    fix_t texStep = (tex_h << FIX_SHIFT) / spanH;
     fix_t texPos  = (drawStart - y0) * texStep;
 
     uint8_t *p = fb + drawStart * SCREEN_W + x;
     for (int y = drawStart; y <= drawEnd; y++) {
-        *p = tex_col[(texPos >> FIX_SHIFT) & TEX_MASK];
+        *p = tex_col[(texPos >> FIX_SHIFT) & tex_mask];
         p += SCREEN_W;
         texPos += texStep;
     }
 }
 
-void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, RenderStats *stats) {
+void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, int theme_id, RenderStats *stats) {
     uint32_t frame_start = hardware_get_cycles();
 
-    draw_background(fb);
+    const Theme *theme = assets_get_theme(theme_id);
+    draw_background(fb, theme->ceil_color, theme->floor_color);
     uint32_t bg_end = hardware_get_cycles();
 
     fix_t dirX = fix_sin(cam->angle);
@@ -141,6 +128,7 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, Ren
 
         uint8_t obs_type[MAX_OBS];
         fix_t   obs_dist[MAX_OBS];
+        uint8_t obs_side[MAX_OBS];
         int     obs_count = 0;
 
         int hit  = 0;
@@ -168,8 +156,12 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, Ren
                 break;
             } else if (tile != TILE_EMPTY && obs_count < MAX_OBS) {
                 obs_type[obs_count] = tile;
-                obs_dist[obs_count] = (side == 0) ? (sideDistX - deltaDistX)
-                                                  : (sideDistY - deltaDistY);
+                if (side == 0) {
+                    obs_dist[obs_count] = sideDistX - deltaDistX;
+                } else {
+                    obs_dist[obs_count] = sideDistY - deltaDistY;
+                }
+                obs_side[obs_count] = (uint8_t)side;
                 obs_count++;
             }
         }
@@ -179,8 +171,12 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, Ren
 
         // 1. Draw textured solid wall
         if (hit) {
-            fix_t perpDist = (side == 0) ? (sideDistX - deltaDistX)
-                                         : (sideDistY - deltaDistY);
+            fix_t perpDist;
+            if (side == 0) {
+                perpDist = sideDistX - deltaDistX;
+            } else {
+                perpDist = sideDistY - deltaDistY;
+            }
             if (perpDist < MIN_DIST) perpDist = MIN_DIST;
 
             int lineH  = (SCREEN_H << FIX_SHIFT) / perpDist;
@@ -189,11 +185,11 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, Ren
             int y1     = y0 + lineH;
 
             int texX = compute_tex_x(cam, perpDist, rayDirX, rayDirY, side);
-            const uint8_t *col = assets_get_wall_column(texX);
-            draw_textured_vspan(fb, x, y0, y1, col);
+            const uint8_t *col = theme->wall[texX & TEX_MASK];
+            draw_textured_vspan(fb, x, y0, y1, col, TEX_SIZE, TEX_MASK);
         }
 
-        // 2. Overlay obstacles back-to-front
+        // 2. Overlay textured obstacles back-to-front
         for (int i = obs_count - 1; i >= 0; i--) {
             fix_t d = obs_dist[i];
             if (d < MIN_DIST) d = MIN_DIST;
@@ -203,12 +199,16 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, Ren
             int y0     = (SCREEN_H - lineH) / 2 + zShift;
             int y1     = y0 + lineH;
 
+            int texX = compute_tex_x(cam, d, rayDirX, rayDirY, obs_side[i]);
+
             if (obs_type[i] == TILE_LOW_BARRIER) {
                 int barTop = y1 - ((lineH * 3) >> 3);
-                draw_vspan(fb, x, barTop, y1, COLOR_JUMP);
+                const uint8_t *col = theme->low_bar[texX & TEX_MASK];
+                draw_textured_vspan(fb, x, barTop, y1, col, OBS_TEX_H, OBS_TEX_MASK);
             } else if (obs_type[i] == TILE_HIGH_BEAM) {
                 int beamBot = y0 + ((lineH * 2) / 5);
-                draw_vspan(fb, x, y0, beamBot, COLOR_DUCK);
+                const uint8_t *col = theme->high_bar[texX & TEX_MASK];
+                draw_textured_vspan(fb, x, y0, beamBot, col, OBS_TEX_H, OBS_TEX_MASK);
             }
         }
 

@@ -80,8 +80,13 @@ int main(void) {
         else if (hardware_get_switch(3)) cam.z = -FIX_HALF / 2;
         else                             cam.z =  0;
 
+        int theme_id = THEME_BRICK;
+        if (hardware_get_switch(4)) {
+            theme_id = THEME_MOSSY;
+        }
+
         RenderStats stats;
-        renderer_draw_frame(hardware_get_backbuffer(), &world, &cam, &stats);
+        renderer_draw_frame(hardware_get_backbuffer(), &world, &cam, theme_id, &stats);
 
         if (stats.total_cycles > 0) {
             hardware_display_number(30000000u / stats.total_cycles);
