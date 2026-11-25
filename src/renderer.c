@@ -7,6 +7,16 @@
 #define MAX_OBS       2
 #define MIN_DIST      4096  // 0.0625, avoid divide by 0
 
+
+void renderer_draw_image(uint8_t *fb, const uint8_t img[SCREEN_H][SCREEN_W]) {
+    const uint8_t *src = &img[0][0];
+    int total_bytes    = SCREEN_W * SCREEN_H;
+
+    for (int i = 0; i < total_bytes; i++) {
+        fb[i] = src[i];
+    }
+}
+
 static void draw_background(uint8_t *fb, uint8_t ceil_color, uint8_t floor_color) {
     uint32_t *fb32  = (uint32_t *)fb;
     uint32_t ceil4  = (uint32_t)ceil_color  * 0x01010101u;
@@ -70,25 +80,6 @@ static inline void draw_textured_vspan(
         *p = tex_col[(texPos >> FIX_SHIFT) & tex_mask];
         p += SCREEN_W;
         texPos += texStep;
-    }
-}
-
-void renderer_draw_image(uint8_t *fb, const uint8_t img[SCREEN_H][SCREEN_W]) {
-    const uint8_t *src8 = &img[0][0];
-    int total_bytes     = SCREEN_W * SCREEN_H;
-
-    if (((uintptr_t)src8 & 3u) == 0) {
-        uint32_t *dst32       = (uint32_t *)fb;
-        const uint32_t *src32 = (const uint32_t *)src8;
-        int total_words       = total_bytes / 4;
-
-        for (int i = 0; i < total_words; i++) {
-            dst32[i] = src32[i];
-        }
-    } else {
-        for (int i = 0; i < total_bytes; i++) {
-            fb[i] = src8[i];
-        }
     }
 }
 

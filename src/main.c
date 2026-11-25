@@ -4,7 +4,6 @@
 #include "renderer.h"
 #include "dtekv-lib.h"
 #include "assets.h"
-#include "textures/castle_gate_320x240.h"
 
 void handle_interrupt(unsigned _irq) {}
 
