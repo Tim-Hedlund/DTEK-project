@@ -3,6 +3,7 @@
 #include "fixmath.h"
 #include "renderer.h"
 #include "dtekv-lib.h"
+#include "assets.h"
 
 void handle_interrupt(unsigned _irq) {}
 
