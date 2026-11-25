@@ -15,7 +15,8 @@ enum {
     D,     // High beam (duck required)
     R,     // Right-turn zone (straight or turn right)
     L,     // Left-turn zone (straight or turn left)
-    T      // T-junction zone (straight or turn left/right)
+    T,     // T-junction zone (turn left/right)
+    X      // Full-function zome (straight, turn left/right) 
 };
 
 typedef struct {
@@ -97,6 +98,19 @@ static const Chunk CHUNKS[] = {
             { _, _, _, _, _, _, _ },
             { W, W, W, W, W, W, W },
             { F, F, F, T, F, F, F },
+            { W, W, W, F, W, W, W },
+            { _, _, W, F, W, _, _ },
+            { _, _, W, F, W, _, _ },
+        }
+    },
+    // 6: X-junction (choose forward, left or right)
+    {
+        .exits = EXIT_EAST | EXIT_WEST | EXIT_NORTH,
+        .tiles = {
+            { _, _, W, F, W, _, _ },
+            { _, _, W, F, W, _, _ },
+            { W, W, W, F, W, W, W },
+            { F, F, F, X, F, F, F },
             { W, W, W, F, W, W, W },
             { _, _, W, F, W, _, _ },
             { _, _, W, F, W, _, _ },
