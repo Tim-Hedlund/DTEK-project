@@ -11,3 +11,5 @@ player holds the player data like position, score, health if that exists and so 
 renderer will be responsible for rendering which will use most of the frame time so this needs to be fast
 
 world is the world generator and theme picker, so the one that generates the world and chooses what textures and colors it should use. 
+
+Textures are mainly generated from edited faithful 32x32 minecraft texture pack via Gemini
