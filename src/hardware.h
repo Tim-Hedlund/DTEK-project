@@ -11,7 +11,7 @@ void hardware_init(void);
 uint8_t *hardware_get_backbuffer(void);
 void hardware_swap_buffers(void);
 
-// Input (call hardware_poll_input() once per frame)
+// Input
 void hardware_poll_input(void);
 int hardware_btn_pressed(void);          // 1 only on the frame the button is clicked
 int hardware_btn_down(void);             // 1 while the button is held down

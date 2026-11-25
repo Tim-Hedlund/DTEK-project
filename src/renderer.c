@@ -73,6 +73,24 @@ static inline void draw_textured_vspan(
     }
 }
 
+void renderer_draw_image(uint8_t *fb, const uint8_t img[SCREEN_H][SCREEN_W]) {
+    const uint8_t *src8 = &img[0][0];
+    int total_bytes     = SCREEN_W * SCREEN_H;
+
+    if (((uintptr_t)src8 & 3u) == 0) {
+        uint32_t *dst32       = (uint32_t *)fb;
+        const uint32_t *src32 = (const uint32_t *)src8;
+        int total_words       = total_bytes / 4;
+
+        for (int i = 0; i < total_words; i++) {
+            dst32[i] = src32[i];
+        }
+    } else {
+        for (int i = 0; i < total_bytes; i++) {
+            fb[i] = src8[i];
+        }
+    }
+}
 
 //DDA loop is fine, sists at average of 60000 cycles per frame
 //Draw loop needs modification, sits at average 800000 cycles per frame

@@ -1,6 +1,8 @@
 #include "assets.h"
+#include "hardware.h"
 #include "textures/brick.h"
 #include "textures/mossy_cobble.h"
+#include "textures/castle_gate_320x240.h"
 
 #define RGB332(r, g, b) ((uint8_t)((((r) & 7) << 5) | (((g) & 7) << 2) | ((b) & 3)))
 
@@ -26,4 +28,8 @@ const Theme *assets_get_theme(int theme_id) {
         theme_id = 0;
     }
     return &themes[theme_id];
+}
+
+const uint8_t (*assets_get_title_screen(void))[SCREEN_W] {
+    return castle_gate_img;
 }

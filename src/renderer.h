@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "fixmath.h"
 #include "world.h"
+#include "hardware.h"
 
 typedef struct {
     fix_t x;
@@ -18,3 +19,5 @@ typedef struct {
 } RenderStats;
 
 void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, int theme_id, RenderStats *stats);
+
+void renderer_draw_image(uint8_t *fb, const uint8_t img[SCREEN_H][SCREEN_W]);
