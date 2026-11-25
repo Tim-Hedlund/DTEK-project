@@ -41,25 +41,30 @@ static inline void draw_vspan(uint8_t *fb, int x, int y0, int y1, uint8_t color)
     }
 }
 
-void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam) {
-    draw_background(fb);
+void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, RenderStats *stats) {
+    uint32_t frame_start = hardware_get_cycles();
 
-    // Camera forward vector: angle 0 = North (+Y), 256 = East (+X)
+    draw_background(fb);
+    uint32_t bg_end = hardware_get_cycles();
+
     fix_t dirX = fix_sin(cam->angle);
     fix_t dirY = fix_cos(cam->angle);
 
-    // Camera plane perpendicular to dir, pointing right (+X when facing North)
     fix_t planeX =  fix_mul(dirY, FOV_SCALE);
     fix_t planeY = -fix_mul(dirX, FOV_SCALE);
 
     int startMapX = FIX_TO_INT(cam->x);
     int startMapY = FIX_TO_INT(cam->y);
 
-    fix_t cameraX = -FIX_ONE; //left
+    fix_t cameraX = -FIX_ONE;
     const fix_t cameraX_step = (2 * FIX_ONE) / SCREEN_W;
-    //setup about 400 cycles + background drawing
+
+    uint32_t dda_total  = 0;
+    uint32_t draw_total = 0;
 
     for (int x = 0; x < SCREEN_W; x++) {
+        uint32_t t_dda_start = hardware_get_cycles();
+
         fix_t rayDirX = dirX + fix_mul(planeX, cameraX);
         fix_t rayDirY = dirY + fix_mul(planeY, cameraX);
         cameraX += cameraX_step;
@@ -95,7 +100,6 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam) {
         int hit  = 0;
         int side = 0;
 
-        // DDA grid traversal
         for (int step = 0; step < MAX_RAY_STEPS; step++) {
             if (sideDistX < sideDistY) {
                 sideDistX += deltaDistX;
@@ -123,6 +127,9 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam) {
                 obs_count++;
             }
         }
+
+        uint32_t t_draw_start = hardware_get_cycles();
+        dda_total += (t_draw_start - t_dda_start);
 
         // 1. Draw solid wall
         if (hit) {
@@ -157,5 +164,14 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam) {
                 draw_vspan(fb, x, y0, beamBot, COLOR_DUCK);
             }
         }
+
+        draw_total += (hardware_get_cycles() - t_draw_start);
+    }
+
+    if (stats) {
+        stats->bg_cycles    = bg_end - frame_start;
+        stats->dda_cycles   = dda_total;
+        stats->draw_cycles  = draw_total;
+        stats->total_cycles = hardware_get_cycles() - frame_start;
     }
 }
