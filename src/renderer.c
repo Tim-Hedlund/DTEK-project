@@ -1,17 +1,16 @@
 #include "renderer.h"
 #include "hardware.h"
+#include "assets.h"
 
 #define RGB332(r, g, b) ((uint8_t)((((r) & 7) << 5) | (((g) & 7) << 2) | ((b) & 3)))
 
-#define FOV_SCALE     43254 //0.66 degrees in fix_t
+#define FOV_SCALE     43254 // ~0.66 in Q16.16 (~66 deg FOV)
 #define MAX_RAY_STEPS 20
 #define MAX_OBS       2
-#define MIN_DIST      4096 //0.0625, avoid divide by 0
+#define MIN_DIST      4096  // 0.0625, avoid divide by 0
 
 #define COLOR_CEIL    RGB332(0, 0, 1)
 #define COLOR_FLOOR   RGB332(2, 1, 1)
-#define COLOR_WALL_NS RGB332(5, 6, 3)
-#define COLOR_WALL_EW RGB332(3, 4, 2)
 #define COLOR_JUMP    RGB332(7, 2, 0)
 #define COLOR_DUCK    RGB332(7, 6, 0)
 
@@ -38,6 +37,53 @@ static inline void draw_vspan(uint8_t *fb, int x, int y0, int y1, uint8_t color)
     for (int y = y0; y <= y1; y++) {
         *p = color;
         p += SCREEN_W;
+    }
+}
+
+static inline int compute_tex_x(
+    const Camera *cam,
+    fix_t dist,
+    fix_t rayDirX, fix_t rayDirY,
+    int side
+) {
+fix_t wallX;
+    if (side == 0) {
+        wallX = cam->y + fix_mul(dist, rayDirY);
+    } else {
+        wallX = cam->x + fix_mul(dist, rayDirX);
+    }
+
+    // Fractional part [0..65535] mapped to [0..31]
+    int texX = (wallX & (FIX_ONE - 1)) >> (FIX_SHIFT - TEX_SHIFT);
+
+    if ((side == 0 && rayDirX > 0) || (side == 1 && rayDirY < 0)) {
+        texX = TEX_SIZE - 1 - texX;
+    }
+    return texX;
+}
+
+static inline void draw_textured_vspan(
+    uint8_t *fb,
+    int x,
+    int y0,
+    int y1,
+    const uint8_t *tex_col
+) {
+    int spanH = y1 - y0;
+    if (spanH <= 0) return;
+
+    int drawStart = (y0 < 0) ? 0 : y0;
+    int drawEnd   = (y1 >= SCREEN_H) ? (SCREEN_H - 1) : y1;
+    if (drawStart > drawEnd) return;
+
+    fix_t texStep = (TEX_SIZE << FIX_SHIFT) / spanH;
+    fix_t texPos  = (drawStart - y0) * texStep;
+
+    uint8_t *p = fb + drawStart * SCREEN_W + x;
+    for (int y = drawStart; y <= drawEnd; y++) {
+        *p = tex_col[(texPos >> FIX_SHIFT) & TEX_MASK];
+        p += SCREEN_W;
+        texPos += texStep;
     }
 }
 
@@ -131,7 +177,7 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, Ren
         uint32_t t_draw_start = hardware_get_cycles();
         dda_total += (t_draw_start - t_dda_start);
 
-        // 1. Draw solid wall
+        // 1. Draw textured solid wall
         if (hit) {
             fix_t perpDist = (side == 0) ? (sideDistX - deltaDistX)
                                          : (sideDistY - deltaDistY);
@@ -142,8 +188,9 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, Ren
             int y0     = (SCREEN_H - lineH) / 2 + zShift;
             int y1     = y0 + lineH;
 
-            uint8_t color = (side == 0) ? COLOR_WALL_EW : COLOR_WALL_NS;
-            draw_vspan(fb, x, y0, y1, color);
+            int texX = compute_tex_x(cam, perpDist, rayDirX, rayDirY, side);
+            const uint8_t *col = assets_get_wall_column(texX);
+            draw_textured_vspan(fb, x, y0, y1, col);
         }
 
         // 2. Overlay obstacles back-to-front
