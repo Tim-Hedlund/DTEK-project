@@ -144,6 +144,7 @@ static void decode_tile(uint8_t sym, uint8_t *vis_out, uint8_t *rule_out) {
         case R: *vis_out = TILE_EMPTY;       *rule_out = RULE_STRAIGHT | RULE_TURN_RIGHT; break;
         case L: *vis_out = TILE_EMPTY;       *rule_out = RULE_STRAIGHT | RULE_TURN_LEFT; break;
         case T: *vis_out = TILE_EMPTY;       *rule_out = RULE_STRAIGHT | RULE_TURN_LEFT | RULE_TURN_RIGHT; break;
+        case X: *vis_out = TILE_EMPTY;       *rule_out = RULE_STRAIGHT | RULE_TURN_LEFT | RULE_TURN_RIGHT; break;
         default:
             *vis_out = TILE_EMPTY;
             *rule_out = RULE_DEAD;

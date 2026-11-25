@@ -3,7 +3,7 @@
 #include "assets.h"
 
 #define FOV_SCALE     43254 // ~0.66 in Q16.16 (~66 deg FOV)
-#define MAX_RAY_STEPS 20
+#define MAX_RAY_STEPS 28
 #define MAX_OBS       2
 #define MIN_DIST      4096  // 0.0625, avoid divide by 0
 
@@ -149,7 +149,6 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, int
             }
 
             if ((unsigned)mapX >= WORLD_W || (unsigned)mapY >= WORLD_H) {
-                hit = 1;
                 break;
             }
 

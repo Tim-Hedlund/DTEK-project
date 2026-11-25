@@ -64,12 +64,12 @@ int main(void) {
             if (gy >= CHUNK_SIZE) {
                 world_advance(&world, DIR_NORTH);
                 cam.y -= INT_TO_FIX(CHUNK_SIZE);
-            } else if (gx >= CHUNK_SIZE * 2) {
+            } else if (gx >= CHUNK_SIZE * 3) {
                 world_advance(&world, DIR_EAST);
                 cam.x = INT_TO_FIX(PLAYER_START_X) + FIX_HALF;
                 cam.y = FIX_HALF;
                 cam.angle = 0;
-            } else if (gx < CHUNK_SIZE) {
+            } else if (gx < CHUNK_SIZE * 2) {
                 world_advance(&world, DIR_WEST);
                 cam.x = INT_TO_FIX(PLAYER_START_X) + FIX_HALF;
                 cam.y = FIX_HALF;
