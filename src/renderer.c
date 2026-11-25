@@ -15,6 +15,7 @@
 #define COLOR_JUMP    RGB332(7, 2, 0)
 #define COLOR_DUCK    RGB332(7, 6, 0)
 
+//135000 clocks for whole frame
 static void draw_background(uint8_t *fb) {
     uint32_t *fb32  = (uint32_t *)fb;
     uint32_t ceil4  = (uint32_t)COLOR_CEIL  * 0x01010101u;
@@ -41,6 +42,8 @@ static inline void draw_vspan(uint8_t *fb, int x, int y0, int y1, uint8_t color)
     }
 }
 
+//DDA loop is fine, sists at average of 60000 cycles per frame
+//Draw loop needs modification, sits at average 350000 cycles per frame
 void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, RenderStats *stats) {
     uint32_t frame_start = hardware_get_cycles();
 
