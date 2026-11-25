@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <hardware.h>
 
 #define TEX_SIZE     32
 #define TEX_SHIFT    5
@@ -23,3 +24,5 @@ typedef struct {
 } Theme;
 
 const Theme *assets_get_theme(int theme_id);
+
+const uint8_t (*assets_get_title_screen(void))[SCREEN_W];
