@@ -39,7 +39,7 @@ typedef struct {
     // Pre-rolled chunk queue (prevents visual popping when advancing)
     uint8_t  cur_id;
     uint8_t  branch_id[3];
-    uint8_t  far_id[3][3];
+    uint8_t  far_id[3];
     uint32_t rng_state;
     uint32_t chunks_cleared;
 } World;
