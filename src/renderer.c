@@ -73,13 +73,10 @@ static inline void draw_textured_vspan(
     }
 }
 
-<<<<<<< HEAD
+
 //DDA loop is fine, sists at average of 60000 cycles per frame
-//Draw loop needs modification, sits at average 350000 cycles per frame
-void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, RenderStats *stats) {
-=======
+//Draw loop needs modification, sits at average 800000 cycles per frame
 void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, int theme_id, RenderStats *stats) {
->>>>>>> assets
     uint32_t frame_start = hardware_get_cycles();
 
     const Theme *theme = assets_get_theme(theme_id);
