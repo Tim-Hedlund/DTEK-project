@@ -9,7 +9,7 @@
 #define MIN_DIST      4096 //0.0625, avoid divide by 0
 
 #define COLOR_CEIL    RGB332(0, 0, 1)
-#define COLOR_FLOOR   RGB332(1, 1, 1)
+#define COLOR_FLOOR   RGB332(2, 1, 1)
 #define COLOR_WALL_NS RGB332(5, 6, 3)
 #define COLOR_WALL_EW RGB332(3, 4, 2)
 #define COLOR_JUMP    RGB332(7, 2, 0)
