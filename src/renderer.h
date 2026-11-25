@@ -17,4 +17,4 @@ typedef struct {
     uint32_t total_cycles; // Full renderer_draw_frame()
 } RenderStats;
 
-void renderer_draw_frame(uint8_t *frame_buffer, const World *world, const Camera *camera);
+void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, RenderStats *stats);
