@@ -28,3 +28,7 @@ static void draw_background(uint8_t *fb) {
         fb32[i] = floor4;
     }
 }
+
+void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam) {
+    draw_background(fb);
+}
