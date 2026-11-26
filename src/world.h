@@ -2,12 +2,12 @@
 #include <stdint.h>
 
 #define CHUNK_SIZE   7
-#define WORLD_W      21   // 3 chunks wide (x: 0..20; current chunk is 7..13)
-#define WORLD_H      21   // 2 chunks tall (y: 0..13; current chunk is 0..6)
-#define WORLD_STRIDE 32   // Power-of-2 row width so visuals[y][x] uses (y << 5)
+#define WORLD_W      35   // 5 chunks wide (x: 0..34; current chunk is 14..20)
+#define WORLD_H      21   // 3 chunks tall (y: 0..20; current chunk is 0..6)
+#define WORLD_STRIDE 64   // Power-of-2 row width >= 35 (y << 6)
 
-// Starting tile inside the bottom-center chunk (player camera sits at x + 0.5, y + 0.5)
-#define PLAYER_START_X 10
+// Starting tile inside bottom-center slot (2, 0)
+#define PLAYER_START_X 17
 #define PLAYER_START_Y 1
 
 // --- Visual Map Encoding ---
@@ -25,6 +25,8 @@
 #define RULE_TURN_RIGHT  (1 << 3)   // Turning right allowed
 #define RULE_STRAIGHT    (1 << 4)   // Walking straight allowed
 
+
+
 typedef enum {
     DIR_NORTH = 0, // Straight ahead (+Y)
     DIR_EAST  = 1, // Right turn     (+X)
@@ -39,7 +41,7 @@ typedef struct {
     // Pre-rolled chunk queue (prevents visual popping when advancing)
     uint8_t  cur_id;
     uint8_t  branch_id[3];
-    uint8_t  far_id[3][3];
+    uint8_t  far_id[3];
     uint32_t rng_state;
     uint32_t chunks_cleared;
 } World;

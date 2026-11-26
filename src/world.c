@@ -15,7 +15,8 @@ enum {
     D,     // High beam (duck required)
     R,     // Right-turn zone (straight or turn right)
     L,     // Left-turn zone (straight or turn left)
-    T      // T-junction zone (straight or turn left/right)
+    T,     // T-junction zone (turn left/right)
+    X      // Full-function zome (straight, turn left/right) 
 };
 
 typedef struct {
@@ -101,6 +102,19 @@ static const Chunk CHUNKS[] = {
             { _, _, W, F, W, _, _ },
             { _, _, W, F, W, _, _ },
         }
+    },
+    // 6: X-junction (choose forward, left or right)
+    {
+        .exits = EXIT_EAST | EXIT_WEST | EXIT_NORTH,
+        .tiles = {
+            { _, _, W, F, W, _, _ },
+            { _, _, W, F, W, _, _ },
+            { W, W, W, F, W, W, W },
+            { F, F, F, X, F, F, F },
+            { W, W, W, F, W, W, W },
+            { _, _, W, F, W, _, _ },
+            { _, _, W, F, W, _, _ },
+        }
     }
 };
 
@@ -130,6 +144,7 @@ static void decode_tile(uint8_t sym, uint8_t *vis_out, uint8_t *rule_out) {
         case R: *vis_out = TILE_EMPTY;       *rule_out = RULE_STRAIGHT | RULE_TURN_RIGHT; break;
         case L: *vis_out = TILE_EMPTY;       *rule_out = RULE_STRAIGHT | RULE_TURN_LEFT; break;
         case T: *vis_out = TILE_EMPTY;       *rule_out = RULE_STRAIGHT | RULE_TURN_LEFT | RULE_TURN_RIGHT; break;
+        case X: *vis_out = TILE_EMPTY;       *rule_out = RULE_STRAIGHT | RULE_TURN_LEFT | RULE_TURN_RIGHT; break;
         default:
             *vis_out = TILE_EMPTY;
             *rule_out = RULE_DEAD;
@@ -176,55 +191,49 @@ static void rebuild_grid(World *world) {
         }
     }
 
-    // 1. Stamp current chunk in bottom-center slot (1, 0)
     const Chunk *cur = &CHUNKS[world->cur_id];
-    stamp_chunk(world, world->cur_id, 1, 0, DIR_NORTH);
+    stamp_chunk(world, world->cur_id, 2, 0, DIR_NORTH);
 
-    // 2. Stamp immediate next chunks and 2nd-level lookahead chunks
     if (cur->exits & EXIT_NORTH) {
         uint8_t next_id = world->branch_id[DIR_NORTH];
-        const Chunk *next = &CHUNKS[next_id];
-        stamp_chunk(world, next_id, 1, 1, DIR_NORTH);
+        stamp_chunk(world, next_id, 2, 1, DIR_NORTH);
 
-        if (next->exits & EXIT_NORTH)
-            stamp_chunk(world, world->far_id[DIR_NORTH][DIR_NORTH], 1, 2, DIR_NORTH);
-        if (next->exits & EXIT_EAST)
-            stamp_chunk(world, world->far_id[DIR_NORTH][DIR_EAST], 2, 1, DIR_EAST);
-        if (next->exits & EXIT_WEST)
-            stamp_chunk(world, world->far_id[DIR_NORTH][DIR_WEST], 0, 1, DIR_WEST);
+        if (CHUNKS[next_id].exits & EXIT_NORTH) {
+            stamp_chunk(world, world->far_id[DIR_NORTH], 2, 2, DIR_NORTH);
+        }
     }
 
     if (cur->exits & EXIT_EAST) {
         uint8_t next_id = world->branch_id[DIR_EAST];
-        const Chunk *next = &CHUNKS[next_id];
-        stamp_chunk(world, next_id, 2, 0, DIR_EAST);
+        stamp_chunk(world, next_id, 3, 0, DIR_EAST);
 
-        if (next->exits & EXIT_WEST)
-            stamp_chunk(world, world->far_id[DIR_EAST][DIR_WEST], 2, 1, DIR_NORTH);
+        if (CHUNKS[next_id].exits & EXIT_NORTH) {
+            stamp_chunk(world, world->far_id[DIR_EAST], 4, 0, DIR_EAST);
+        }
     }
 
     if (cur->exits & EXIT_WEST) {
         uint8_t next_id = world->branch_id[DIR_WEST];
-        const Chunk *next = &CHUNKS[next_id];
-        stamp_chunk(world, next_id, 0, 0, DIR_WEST);
+        stamp_chunk(world, next_id, 1, 0, DIR_WEST);
 
-        if (next->exits & EXIT_EAST)
-            stamp_chunk(world, world->far_id[DIR_WEST][DIR_EAST], 0, 1, DIR_NORTH);
+        if (CHUNKS[next_id].exits & EXIT_NORTH) {
+            stamp_chunk(world, world->far_id[DIR_WEST], 0, 0, DIR_WEST);
+        }
     }
 }
 
-
-// Public Functions
 void world_init(World *world, uint32_t seed) {
-    world->rng_state = (seed != 0) ? seed : 0x12345678;
+    if (seed != 0) {
+        world->rng_state = seed;
+    } else {
+        world->rng_state = 0x12345678;
+    }
     world->chunks_cleared = 0;
-
     world->cur_id = 0;
+
     for (int d = 0; d < 3; d++) {
         world->branch_id[d] = pick_random_chunk(world);
-        for (int f = 0; f < 3; f++) {
-            world->far_id[d][f] = pick_random_chunk(world);
-        }
+        world->far_id[d]    = pick_random_chunk(world);
     }
 
     rebuild_grid(world);
@@ -234,14 +243,12 @@ void world_advance(World *world, Direction exit_dir) {
     world->chunks_cleared++;
     world->cur_id = world->branch_id[exit_dir];
 
-    for (int d = 0; d < 3; d++) {
-        world->branch_id[d] = world->far_id[exit_dir][d];
-    }
+    world->branch_id[DIR_NORTH] = world->far_id[exit_dir];
+    world->branch_id[DIR_EAST]  = pick_random_chunk(world);
+    world->branch_id[DIR_WEST]  = pick_random_chunk(world);
 
     for (int d = 0; d < 3; d++) {
-        for (int f = 0; f < 3; f++) {
-            world->far_id[d][f] = pick_random_chunk(world);
-        }
+        world->far_id[d] = pick_random_chunk(world);
     }
 
     rebuild_grid(world);

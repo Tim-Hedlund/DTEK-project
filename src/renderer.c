@@ -3,9 +3,19 @@
 #include "assets.h"
 
 #define FOV_SCALE     43254 // ~0.66 in Q16.16 (~66 deg FOV)
-#define MAX_RAY_STEPS 20
+#define MAX_RAY_STEPS 28
 #define MAX_OBS       2
 #define MIN_DIST      4096  // 0.0625, avoid divide by 0
+
+
+void renderer_draw_image(uint8_t *fb, const uint8_t img[SCREEN_H][SCREEN_W]) {
+    const uint8_t *src = &img[0][0];
+    int total_bytes    = SCREEN_W * SCREEN_H;
+
+    for (int i = 0; i < total_bytes; i++) {
+        fb[i] = src[i];
+    }
+}
 
 static void draw_background(uint8_t *fb, uint8_t ceil_color, uint8_t floor_color) {
     uint32_t *fb32  = (uint32_t *)fb;
@@ -72,7 +82,6 @@ static inline void draw_textured_vspan(
         texPos += texStep;
     }
 }
-
 
 //DDA loop is fine, sists at average of 60000 cycles per frame
 //Draw loop needs modification, sits at average 800000 cycles per frame
@@ -149,7 +158,6 @@ void renderer_draw_frame(uint8_t *fb, const World *world, const Camera *cam, int
             }
 
             if ((unsigned)mapX >= WORLD_W || (unsigned)mapY >= WORLD_H) {
-                hit = 1;
                 break;
             }
 
